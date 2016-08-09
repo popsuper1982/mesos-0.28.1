@@ -199,8 +199,9 @@ private:
       const ContainerID& containerId,
       pid_t pid);
 
-  process::Future<bool> postLaunchDockerHook(
+  process::Future<pid_t> postLaunchDockerHook(
       const ContainerID& containerId,
+      pid_t pid,
       const Option<TaskInfo>& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& sandboxDirectory);

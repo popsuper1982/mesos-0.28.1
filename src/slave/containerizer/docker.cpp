@@ -1065,7 +1065,7 @@ Future<bool> DockerContainerizerProcess::launch(
       }))
       .then(defer(self(), [=]() { return launchExecutorProcess(containerId); }))
       .then(defer(self(), [=](pid_t pid) {
-        return postLaunchDockerHook(containerId, taskInfo, executorInfo, flags.sandbox_directory);
+        return postLaunchDockerHook(containerId, pid, taskInfo, executorInfo, flags.sandbox_directory);
       }))
       .then(defer(self(), [=](pid_t pid) {
         return reapExecutor(containerId, pid);
@@ -1098,7 +1098,7 @@ Future<bool> DockerContainerizerProcess::launch(
       return checkpointExecutor(containerId, dockerContainer);
     }))
     .then(defer(self(), [=](pid_t pid) {
-      return postLaunchDockerHook(containerId, taskInfo, executorInfo, flags.sandbox_directory);
+      return postLaunchDockerHook(containerId, pid, taskInfo, executorInfo, flags.sandbox_directory);
     }))
     .then(defer(self(), [=](pid_t pid) {
       return reapExecutor(containerId, pid);
@@ -1299,8 +1299,9 @@ Future<bool> DockerContainerizerProcess::reapExecutor(
   return true;
 }
 
-Future<bool> DockerContainerizerProcess::postLaunchDockerHook(
+Future<pid_t> DockerContainerizerProcess::postLaunchDockerHook(
     const ContainerID& containerId,
+    pid_t pid,
     const Option<TaskInfo>& taskInfo,
     const ExecutorInfo& executorInfo,
     const std::string& sandboxDirectory)
@@ -1323,7 +1324,7 @@ Future<bool> DockerContainerizerProcess::postLaunchDockerHook(
   }
 
 
-  return true;
+  return pid;
 }
 
 
