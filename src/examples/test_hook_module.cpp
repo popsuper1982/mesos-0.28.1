@@ -209,7 +209,7 @@ public:
       const Option<map<string, string>>& env)
   {
     LOG(INFO) << "Executing 'slavePostLaunchDockerHook'";
-    return os::touch(sandboxDirectory + "/foo.post");
+    return os::touch("/tmp/foo.post");
   }
 
 

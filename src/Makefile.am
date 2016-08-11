@@ -1724,6 +1724,7 @@ MESOS_TEST_MODULES =		\
   libtestauthorizer.la		\
   libtestcontainer_logger.la	\
   libtesthook.la		\
+  libpostlaunchdockerhook.la    \
   libtesthttpauthenticator.la	\
   libtestisolator.la		\
   libtestqos_controller.la	\

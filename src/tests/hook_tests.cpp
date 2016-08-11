@@ -795,7 +795,7 @@ TEST_F(HookTest, ROOT_DOCKER_VerifySlavePostLaunchDockerHook)
 
   CommandInfo command;
   command.set_value("test -f " + path::join(flags.sandbox_directory, "foo"));
-
+  std::cout << path::join(flags.sandbox_directory, "foo") << std::endl;
   ContainerInfo containerInfo;
   containerInfo.set_type(ContainerInfo::DOCKER);
 
@@ -830,7 +830,7 @@ TEST_F(HookTest, ROOT_DOCKER_VerifySlavePostLaunchDockerHook)
   EXPECT_EQ(TASK_RUNNING, statusRunning.get().state());
   AWAIT_READY_FOR(statusFinished, Seconds(60));
   EXPECT_EQ(TASK_FINISHED, statusFinished.get().state());
-  EXPECT_EQ(true, os::exists(path::join(flags.sandbox_directory, "foo.post")));
+  EXPECT_EQ(true, os::exists("/tmp/foo.post"));
 
   Future<containerizer::Termination> termination =
     dockerContainerizer.wait(containerId.get());
