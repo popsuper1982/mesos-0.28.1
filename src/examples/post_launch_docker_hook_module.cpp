@@ -23,23 +23,89 @@
 #include <process/future.hpp>
 #include <process/process.hpp>
 #include <process/protobuf.hpp>
+#include <process/check.hpp>
+#include <process/collect.hpp>
+#include <process/io.hpp>
+#include <process/subprocess.hpp>
 
 #include <stout/foreach.hpp>
 #include <stout/os.hpp>
 #include <stout/try.hpp>
+#include "common/status_utils.hpp"
 
 #include "messages/messages.hpp"
 
 using namespace mesos;
+using namespace process;
 
 using std::map;
 using std::string;
 
 using process::Future;
 
+template <typename T>
+static Future<T> failure(
+    const string& cmd,
+    int status,
+    const string& err)
+{
+  return Failure(
+      "Failed to '" + cmd + "': exit status = " +
+      WSTRINGIFY(status) + " stderr = " + err);
+}
+
+static Future<Nothing> _checkError(const string& cmd, const Subprocess& s)
+{
+  Option<int> status = s.status().get();
+  if (status.isNone()) {
+    return Failure("No status found for '" + cmd + "'");
+  }
+
+  if (status.get() != 0) {
+    // TODO(tnachen): Consider returning stdout as well.
+    CHECK_SOME(s.err());
+    return io::read(s.err().get())
+      .then(lambda::bind(failure<Nothing>, cmd, status.get(), lambda::_1));
+  }
+
+  return Nothing();
+}
+
+
+// Returns a failure if no status or non-zero status returned from
+// subprocess.
+static Future<Nothing> checkError(const string& cmd, const Subprocess& s)
+{
+  return s.status()
+    .then(lambda::bind(_checkError, cmd, s));
+}
+
+static Future<Nothing> runCommand(const string cmd)
+{
+  LOG(INFO) << "Running " << cmd;
+
+  Try<Subprocess> s = subprocess(
+      cmd,
+      Subprocess::PATH("/dev/null"),
+      Subprocess::PATH("/dev/null"),
+      Subprocess::PIPE());
+
+  if (s.isError()) {
+    return Failure(s.error());
+  }
+
+  return checkError(cmd, s.get());
+}
+
 class PostLaunchDockerHook : public Hook
 {
 public:
+  PostLaunchDockerHook(
+    const string& _cmd,
+    const string& _hostproc)
+  : cmd(_cmd),
+  hostproc(_hostproc){}
+
   virtual Result<Labels> masterLaunchTaskLabelDecorator(
       const TaskInfo& taskInfo,
       const FrameworkInfo& frameworkInfo,
@@ -107,7 +173,8 @@ public:
       const Option<Resources>& resources,
       const Option<map<string, string>>& env)
   {
-    LOG(INFO) << "Executing 'slavePostLaunchDockerHook'";
+    LOG(INFO) << "Executing 'slavePostLaunchDockerHook' " + name;
+    runCommand(cmd + " " + hostproc + " " + name);
     return Nothing();
   }
 
@@ -146,14 +213,27 @@ public:
     LOG(INFO) << "Executing 'slaveAttributesDecorator' hook";
     return None();
   }
+
+private:
+  const string cmd;
+  const string hostproc;
 };
 
 
 static Hook* createHook(const Parameters& parameters)
 {
-  return new PostLaunchDockerHook();
+  string cmd = "/usr/local/bin/linkerconfig";
+  string hostproc = "/mnt/proc";
+  for (int i = 0; i < parameters.parameter_size(); i++) {
+    const Parameter& param = parameters.parameter(i);
+    if (param.key() == "cmd") {
+      cmd =  param.value();
+    } else if (param.key() == "hostproc") {
+      hostproc = param.value();
+    }
+  }
+  return new PostLaunchDockerHook(cmd, hostproc);
 }
-
 
 // Declares a Hook module named 'org_apache_mesos_TestHook'.
 mesos::modules::Module<Hook> org_apache_mesos_PostLaunchDockerHook(
