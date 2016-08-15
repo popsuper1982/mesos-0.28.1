@@ -137,6 +137,10 @@ public:
       const Duration& timeout = Seconds(0),
       bool remove = false) const;
 
+  virtual process::Future<Nothing> update(
+      const std::string& containerName,
+      const Option<mesos::Resources>& resources = None()) const;
+
   // Performs 'docker rm (-f) CONTAINER'.
   virtual process::Future<Nothing> rm(
       const std::string& containerName,

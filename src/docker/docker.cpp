@@ -748,6 +748,53 @@ Future<Nothing> Docker::_stop(
 }
 
 
+Future<Nothing> Docker::update(
+    const string& containerName,
+    const Option<mesos::Resources>& resources = None()) const
+{
+  vector<string> argv;
+  argv.push_back(path);
+  argv.push_back("-H");
+  argv.push_back(socket);
+  argv.push_back("update");
+
+  if (resources.isSome()) {
+    // TODO(yifan): Support other resources (e.g. disk).
+    Option<double> cpus = resources.get().cpus();
+    if (cpus.isSome()) {
+      uint64_t cpuShare =
+        std::max((uint64_t) (CPU_SHARES_PER_CPU * cpus.get()), MIN_CPU_SHARES);
+      argv.push_back("--cpu-shares");
+      argv.push_back(stringify(cpuShare));
+    }
+
+    Option<Bytes> mem = resources.get().mem();
+    if (mem.isSome()) {
+      Bytes memLimit = std::max(mem.get(), MIN_MEMORY);
+      argv.push_back("--memory");
+      argv.push_back(stringify(memLimit.bytes()));
+    }
+  }
+
+  argv.push_back(containerName);
+
+  string cmd = strings::join(" ", argv);
+
+  VLOG(1) << "Running " << cmd;
+
+  Try<Subprocess> s = subprocess(
+      cmd,
+      Subprocess::PATH("/dev/null"),
+      Subprocess::PATH("/dev/null"),
+      Subprocess::PIPE());
+
+  if (s.isError()) {
+    return Failure(s.error());
+  }
+
+  return checkError(cmd, s.get());
+}
+
 Future<Nothing> Docker::rm(
     const string& containerName,
     bool force) const
