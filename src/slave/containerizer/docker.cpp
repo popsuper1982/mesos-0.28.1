@@ -1365,13 +1365,15 @@ Future<Nothing> DockerContainerizerProcess::update(
     return Nothing();
   }
 
+  return docker->update(containers_[containerId]->name(), _resources);
+  /*
   // Skip inspecting the docker container if we already have the pid.
   if (container->pid.isSome()) {
     return __update(containerId, _resources, container->pid.get());
   }
-
   return docker->inspect(containers_[containerId]->name())
     .then(defer(self(), &Self::_update, containerId, _resources, lambda::_1));
+    */
 #else
   return Nothing();
 #endif // __linux__
