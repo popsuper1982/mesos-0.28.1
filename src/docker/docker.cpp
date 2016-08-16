@@ -752,14 +752,13 @@ Future<Nothing> Docker::update(
     const string& containerName,
     const Option<mesos::Resources>& resources) const
 {
-  vector<string> argv;
-  argv.push_back(path);
-  argv.push_back("-H");
-  argv.push_back(socket);
-  argv.push_back("update");
-
   if (resources.isSome()) {
-    // TODO(yifan): Support other resources (e.g. disk).
+    vector<string> argv;
+    argv.push_back(path);
+    argv.push_back("-H");
+    argv.push_back(socket);
+    argv.push_back("update");
+
     Option<double> cpus = resources.get().cpus();
     if (cpus.isSome()) {
       uint64_t cpuShare =
@@ -774,44 +773,28 @@ Future<Nothing> Docker::update(
       argv.push_back("--memory");
       argv.push_back(stringify(memLimit.bytes()));
     }
+
+    argv.push_back(containerName);
+
+    string cmd = strings::join(" ", argv);
+
+    VLOG(1) << "Running " << cmd;
+    std::cout << "Running " << cmd << std::endl;
+
+    Try<Subprocess> s = subprocess(
+        cmd,
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PIPE());
+
+    if (s.isError()) {
+      return Failure(s.error());
+    }
+
+    return checkError(cmd, s.get());
+  } else {
+    return Nothing();
   }
-
-  argv.push_back(containerName);
-
-  string cmd = strings::join(" ", argv);
-
-  VLOG(1) << "Running " << cmd;
-
-  map<string, string> environment = os::environment();
-
-  Try<Subprocess> s = subprocess(
-      path,
-      argv,
-      Subprocess::PATH("/dev/null"),
-      Subprocess::FD(STDOUT_FILENO),
-      Subprocess::FD(STDERR_FILENO),
-      None(),
-      environment);
-
-  if (s.isError()) {
-    return Failure(s.error());
-  }
-
-  return s.get().status()
-    .then(lambda::bind(
-        &Docker::_update,
-        lambda::_1));
-}
-
-Future<Nothing> Docker::_update(const Option<int>& status)
-{
-  if (status.isNone()) {
-    return Failure("Failed to get exit status");
-  } else if (status.get() != 0) {
-    return Failure("Container exited on error: " + WSTRINGIFY(status.get()));
-  }
-
-  return Nothing();
 }
 
 Future<Nothing> Docker::rm(
