@@ -101,10 +101,8 @@ class PostLaunchDockerHook : public Hook
 {
 public:
   PostLaunchDockerHook(
-    const string& _cmd,
-    const string& _hostproc)
-  : cmd(_cmd),
-  hostproc(_hostproc){}
+    const string& _cmd)
+  : cmd(_cmd){}
 
   virtual Result<Labels> masterLaunchTaskLabelDecorator(
       const TaskInfo& taskInfo,
@@ -174,7 +172,7 @@ public:
       const Option<map<string, string>>& env)
   {
     LOG(INFO) << "Executing 'slavePostLaunchDockerHook' " + name;
-    runCommand(cmd + " " + hostproc + " " + name);
+    runCommand(cmd + " " + name);
     return Nothing();
   }
 
@@ -216,23 +214,19 @@ public:
 
 private:
   const string cmd;
-  const string hostproc;
 };
 
 
 static Hook* createHook(const Parameters& parameters)
 {
   string cmd = "/usr/local/bin/linkerconfig";
-  string hostproc = "/mnt/proc";
   for (int i = 0; i < parameters.parameter_size(); i++) {
     const Parameter& param = parameters.parameter(i);
     if (param.key() == "cmd") {
       cmd =  param.value();
-    } else if (param.key() == "hostproc") {
-      hostproc = param.value();
     }
   }
-  return new PostLaunchDockerHook(cmd, hostproc);
+  return new PostLaunchDockerHook(cmd);
 }
 
 // Declares a Hook module named 'org_apache_mesos_TestHook'.

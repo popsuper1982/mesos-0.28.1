@@ -750,7 +750,7 @@ Future<Nothing> Docker::_stop(
 
 Future<Nothing> Docker::update(
     const string& containerName,
-    const Option<mesos::Resources>& resources = None()) const
+    const Option<mesos::Resources>& resources) const
 {
   vector<string> argv;
   argv.push_back(path);
@@ -778,7 +778,7 @@ Future<Nothing> Docker::update(
 
   argv.push_back(containerName);
 
-  string cmd = strings::join(" ", argv);
+  string cmd = strings::join("", argv);
 
   VLOG(1) << "Running " << cmd;
 
