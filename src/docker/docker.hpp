@@ -181,6 +181,9 @@ private:
   static process::Future<Nothing> _run(
       const Option<int>& status);
 
+  static process::Future<Nothing> _update(
+      const Option<int>& status);
+
   static process::Future<Version> _version(
       const std::string& cmd,
       const process::Subprocess& s);
