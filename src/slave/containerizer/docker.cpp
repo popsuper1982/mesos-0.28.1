@@ -1101,7 +1101,7 @@ Future<bool> DockerContainerizerProcess::launch(
       return postLaunchDockerHook(containerId, pid, taskInfo, executorInfo, flags.sandbox_directory);
     }))
     .then(defer(self(), [=](pid_t pid) {
-      return reapExecutor(containerId, pid);
+      return reapExecutorContainer(containerId, pid);
     }));
 }
 
@@ -1295,6 +1295,23 @@ Future<bool> DockerContainerizerProcess::reapExecutor(
 
   container->status.future().get()
     .onAny(defer(self(), &Self::reaped, containerId));
+
+  return true;
+}
+
+Future<bool> DockerContainerizerProcess::reapExecutorContainer(
+    const ContainerID& containerId,
+    pid_t pid)
+{
+  // After we do Docker::run we shouldn't remove a container until
+  // after we set 'status', which we do in this function.
+  CHECK(containers_.contains(containerId));
+
+  Container* container = containers_[containerId];
+
+  Future<Nothing> wait = docker->wait(container->name());
+
+  wait->onAny(defer(self(), &Self::reaped, containerId));
 
   return true;
 }

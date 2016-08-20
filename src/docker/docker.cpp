@@ -799,6 +799,35 @@ Future<Nothing> Docker::update(
   }
 }
 
+Future<Nothing> Docker::wait(
+    const string& containerName) const
+{
+    vector<string> argv;
+    argv.push_back(path);
+    argv.push_back("-H");
+    argv.push_back(socket);
+    argv.push_back("wait");
+    argv.push_back(containerName);
+
+    string cmd = strings::join(" ", argv);
+
+    VLOG(1) << "Running " << cmd;
+    std::cout << "Running " << cmd << std::endl;
+
+    Try<Subprocess> s = subprocess(
+        cmd,
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PIPE());
+
+    if (s.isError()) {
+      return Failure(s.error());
+    }
+
+    return checkError(cmd, s.get());
+}
+
+
 Future<Nothing> Docker::rm(
     const string& containerName,
     bool force) const

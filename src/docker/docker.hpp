@@ -141,6 +141,9 @@ public:
       const std::string& containerName,
       const Option<mesos::Resources>& resources = None()) const;
 
+  virtual process::Future<Nothing> wait(
+      const std::string& containerName) const;
+
   // Performs 'docker rm (-f) CONTAINER'.
   virtual process::Future<Nothing> rm(
       const std::string& containerName,
