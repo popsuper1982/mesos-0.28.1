@@ -772,6 +772,8 @@ Future<Nothing> Docker::update(
       Bytes memLimit = std::max(mem.get(), MIN_MEMORY);
       argv.push_back("--memory");
       argv.push_back(stringify(memLimit.bytes()));
+      argv.push_back("--memory-swap");
+      argv.push_back(stringify(memLimit.bytes()*2));
     }
 
     argv.push_back(containerName);
