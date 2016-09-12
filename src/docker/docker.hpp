@@ -141,7 +141,7 @@ public:
       const std::string& containerName,
       const Option<mesos::Resources>& resources = None()) const;
 
-  virtual process::Future<Nothing> wait(
+  virtual process::Future<Option<int> > wait(
       const std::string& containerName) const;
 
   // Performs 'docker rm (-f) CONTAINER'.
@@ -198,6 +198,15 @@ private:
       const process::Subprocess& s,
       bool remove);
 
+  static void _wait(
+      const std::string& cmd,
+      const process::Owned<process::Promise<Option<int> >>& promise);
+
+  static void __wait(
+      const std::string& cmd,
+      const process::Owned<process::Promise<Option<int> >>& promise,
+      const process::Subprocess& s);
+  
   static void _inspect(
       const std::string& cmd,
       const process::Owned<process::Promise<Container>>& promise,

@@ -799,9 +799,11 @@ Future<Nothing> Docker::update(
   }
 }
 
-Future<Nothing> Docker::wait(
+Future<Option<int> > Docker::wait(
     const string& containerName) const
 {
+    Owned<Promise<Option<int> > > promise(new Promise<Option<int> >());
+
     vector<string> argv;
     argv.push_back(path);
     argv.push_back("-H");
@@ -813,7 +815,15 @@ Future<Nothing> Docker::wait(
 
     VLOG(1) << "Running " << cmd;
     std::cout << "Running " << cmd << std::endl;
+    _wait(cmd, promise);
 
+    return promise->future();
+}
+
+void Docker::_wait(
+    const string& cmd,
+    const Owned<Promise<Option<int> >& promise)
+{
     Try<Subprocess> s = subprocess(
         cmd,
         Subprocess::PATH("/dev/null"),
@@ -821,12 +831,36 @@ Future<Nothing> Docker::wait(
         Subprocess::PIPE());
 
     if (s.isError()) {
-      return Failure(s.error());
+      promise->fail(s.error());
+      return;
     }
 
-    return checkError(cmd, s.get());
+    s.get().status()
+      .onAny([=]() { __wait(cmd, promise, s.get()); });
 }
 
+void Docker::__wait(
+    const string& cmd,
+    const Owned<Promise<Docker::Container>>& promise,
+    const Subprocess& s)
+{
+    if (promise->future().hasDiscard()) {
+      promise->discard();
+      output.discard();
+      return;
+    }
+
+    // Check the exit status of 'docker inspect'.
+    CHECK_READY(s.status());
+
+    Option<int> status = s.status().get();
+
+    if (!status.isSome()) {
+      promise->fail("No status found from '" + cmd + "'");
+    } else {
+      promise->set(status);
+    }
+}
 
 Future<Nothing> Docker::rm(
     const string& containerName,

@@ -1309,9 +1309,13 @@ Future<bool> DockerContainerizerProcess::reapExecutorContainer(
 
   Container* container = containers_[containerId];
 
-  Option<Future<Nothing>> wait = docker->wait(container->name());
+  container->status.set(docker->wait(container->name()));
 
-  wait->onAny(defer(self(), &Self::reaped, containerId));
+  container->status.future().get()
+    .onAny(defer(self(), &Self::reaped, containerId));
+
+  //Option<Future<Nothing>> wait = docker->wait(container->name());
+  //wait->onAny(defer(self(), &Self::reaped, containerId));
 
   return true;
 }
