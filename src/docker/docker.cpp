@@ -846,7 +846,6 @@ void Docker::__wait(
 {
     if (promise->future().hasDiscard()) {
       promise->discard();
-      output.discard();
       return;
     }
 
