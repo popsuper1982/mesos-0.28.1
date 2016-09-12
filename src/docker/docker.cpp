@@ -822,7 +822,7 @@ Future<Option<int> > Docker::wait(
 
 void Docker::_wait(
     const string& cmd,
-    const Owned<Promise<Option<int> >& promise)
+    const Owned<Promise<Option<int> > >& promise)
 {
     Try<Subprocess> s = subprocess(
         cmd,
@@ -841,7 +841,7 @@ void Docker::_wait(
 
 void Docker::__wait(
     const string& cmd,
-    const Owned<Promise<Docker::Container>>& promise,
+    const Owned<Promise<Option<int> > >& promise,
     const Subprocess& s)
 {
     if (promise->future().hasDiscard()) {

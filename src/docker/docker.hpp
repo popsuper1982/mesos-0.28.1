@@ -200,11 +200,11 @@ private:
 
   static void _wait(
       const std::string& cmd,
-      const process::Owned<process::Promise<Option<int> >>& promise);
+      const process::Owned<process::Promise<Option<int> > >& promise);
 
   static void __wait(
       const std::string& cmd,
-      const process::Owned<process::Promise<Option<int> >>& promise,
+      const process::Owned<process::Promise<Option<int> > >& promise,
       const process::Subprocess& s);
   
   static void _inspect(
